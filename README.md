@@ -81,3 +81,18 @@ streamlit run streamlit_app.py
 **Sampathi Varaprasad**
 
 GitHub: https://github.com/sampathi-24
+
+
+## Application Screenshots
+
+### 1. Chatbot Interface
+![Chatbot Interface](screenshots/chatbot-interface.png)
+
+### 2. PDF Upload
+![PDF Upload](screenshots/pdf-upload.png)
+
+### 3. Question and Answer
+![Question and Answer](screenshots/question-answer.png)
+
+### 4. Education Details
+![Education Details](screenshots/education-answer.png)

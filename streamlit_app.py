@@ -223,35 +223,63 @@ if uploaded_file is not None:
                 question_lower = question.lower()
 
                 # ---------------------------------
-                # 11. Retrieve relevant PDF chunks
+                # 11. Identify broad questions
                 # ---------------------------------
 
-                with st.spinner("Finding the answer..."):
+                # Questions about the entire PDF
+                document_overview_phrases = [
+                    "what is this pdf about",
+                    "what is this document about",
+                    "what does this pdf contain",
+                    "what does this document contain",
+                    "summarize this pdf",
+                    "summarize this document",
+                    "give me a summary",
+                    "give me an overview",
+                    "tell me about this pdf",
+                    "tell me about this document",
+                    "describe this pdf",
+                    "describe this document"
+                ]
 
-                    # Questions about complete sections
-                    broad_question_keywords = [
-                        "project",
-                        "experience",
-                        "internship",
-                        "employment",
-                        "education",
-                        "qualification",
-                        "skill",
-                        "certification",
-                        "responsibilit",
-                        "responsibility",
-                        "duties",
-                        "duty",
-                        "role",
-                        "position",
-                        "company",
-                        "technolog"
-                    ]
+                is_document_overview = any(
+                    phrase in question_lower
+                    for phrase in document_overview_phrases
+                )
 
-                    is_broad_question = any(
+                # Questions about complete sections
+                broad_question_keywords = [
+                    "project",
+                    "experience",
+                    "internship",
+                    "employment",
+                    "education",
+                    "qualification",
+                    "skill",
+                    "certification",
+                    "responsibilit",
+                    "responsibility",
+                    "duties",
+                    "duty",
+                    "role",
+                    "position",
+                    "company",
+                    "technolog"
+                ]
+
+                is_broad_question = (
+                    is_document_overview
+                    or any(
                         keyword in question_lower
                         for keyword in broad_question_keywords
                     )
+                )
+
+                # ---------------------------------
+                # 12. Retrieve relevant PDF chunks
+                # ---------------------------------
+
+                with st.spinner("Finding the answer..."):
 
                     if is_broad_question:
 
@@ -283,7 +311,7 @@ if uploaded_file is not None:
                     )
 
                     # ---------------------------------
-                    # 12. Initialize Gemini
+                    # 13. Initialize Gemini
                     # ---------------------------------
 
                     llm = ChatGoogleGenerativeAI(
@@ -294,8 +322,70 @@ if uploaded_file is not None:
                     )
 
                     # ---------------------------------
-                    # 13. Prepare prompt
+                    # 14. Prepare prompt
                     # ---------------------------------
+
+                    if is_document_overview:
+
+                        question_instructions = """
+                        The user is asking for an overview of the
+                        entire PDF document.
+
+                        Carefully review all the provided PDF context.
+
+                        Identify and summarize every major section
+                        present in the document.
+
+                        For a resume, check for sections such as:
+                        - Personal or professional summary
+                        - Education
+                        - Technical skills
+                        - Work experience and internships
+                        - Projects
+                        - Certifications
+                        - Achievements
+
+                        Include only sections that actually appear
+                        in the PDF.
+
+                        Mention the important details under each
+                        available section.
+
+                        Do not focus on only one project or one
+                        matching paragraph.
+
+                        Do not omit major sections that are present
+                        in the provided context.
+
+                        Present the answer using clear headings
+                        and bullet points.
+                        """
+
+                    else:
+
+                        question_instructions = """
+                        Answer the user's specific question using
+                        all relevant information in the PDF context.
+
+                        For questions about projects, experience,
+                        internships, education, skills or
+                        certifications, include all relevant
+                        information in the context.
+
+                        For responsibility questions, list every
+                        responsibility bullet found in the relevant
+                        experience section.
+
+                        Preserve the original meaning of the
+                        information.
+
+                        Include job title, company, duration,
+                        responsibilities and work mode when
+                        available.
+
+                        Organize skills and certifications clearly
+                        when the user asks about them.
+                        """
 
                     prompt = f"""
                     You are a helpful PDF question-answering assistant.
@@ -316,40 +406,24 @@ if uploaded_file is not None:
                     2. Use conversation history to understand
                        follow-up questions and references.
 
-                    3. For questions about projects, experience,
-                       internships, education, skills or certifications,
-                       include all relevant information in the context.
+                    3. {question_instructions}
 
-                    4. For responsibility questions, list every
-                       responsibility bullet found in the relevant
-                       experience section. Do not omit bullets or
-                       shorten the list.
-
-                    5. Preserve the original meaning of each
-                       responsibility.
-
-                    6. Include job title, company, duration,
-                       responsibilities and work mode when available.
-
-                    7. Organize skills and certifications clearly
-                       when the user asks about them.
-
-                    8. Do not confuse technical skills, projects,
+                    4. Do not confuse technical skills, projects,
                        certifications and work experience.
 
-                    9. If information is not available in the PDF,
+                    5. If information is not available in the PDF,
                        clearly say that it is not available.
 
-                    10. Do not invent information.
+                    6. Do not invent information.
 
-                    11. Mention relevant PDF page numbers using
-                        this exact format: [Page 1].
+                    7. Mention relevant PDF page numbers using
+                       this exact format: [Page 1].
 
-                    12. Only cite pages that support your answer.
+                    8. Only cite pages that support your answer.
                     """
 
                     # ---------------------------------
-                    # 14. Generate answer
+                    # 15. Generate answer
                     # ---------------------------------
 
                     response = llm.invoke(prompt)
@@ -357,7 +431,7 @@ if uploaded_file is not None:
                     answer = response.text
 
                     # ---------------------------------
-                    # 15. Extract source page numbers
+                    # 16. Extract source page numbers
                     # ---------------------------------
 
                     retrieved_pages = {
@@ -377,7 +451,7 @@ if uploaded_file is not None:
                     })
 
                 # ---------------------------------
-                # 16. Save and display answer
+                # 17. Save and display answer
                 # ---------------------------------
 
                 st.session_state.messages.append({
